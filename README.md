@@ -1,8 +1,8 @@
 ## Cálculos Previdenciários
 
-Complemento do *Google Sheets* com ferramentas para facilitar o preenchimento e o uso das planilhas de cálculo elaboradas pela **Contadoria**. Algumas das ferramentas podem ser também utilizadas em outras planilhas.
+Este repositório hospeda a documentação do complemento "*Cálculos Previdenciários*", desenvolvido em *Google Apps Script* pela **Contadoria**, organização criada no *Github*. O complemento oferece ferramentas para facilitar o preenchimento e o uso das planilhas de cálculo elaboradas pela **Contadoria**. Algumas das ferramentas podem ser também utilizadas em outras planilhas.
 
-### Características
+### Características do complemento
 
 * Área de transferência para copiar dados entre planilhas
 * Possibilidade de salvar dados de configuração do usuário
