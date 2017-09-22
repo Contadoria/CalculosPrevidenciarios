@@ -1,6 +1,6 @@
 ## Cálculos Previdenciários
 
-Complemento do *Google Sheets* com ferramentas para facilitar o preenchimento e o uso das planilhas de cálculo. Algumas das ferramentas podem ser também utilizadas em outras planilhas.
+Complemento do *Google Sheets* com ferramentas para facilitar o preenchimento e o uso das planilhas de cálculo elaboradas pela **Contadoria**. Algumas das ferramentas podem ser também utilizadas em outras planilhas.
 
 ### Características
 
