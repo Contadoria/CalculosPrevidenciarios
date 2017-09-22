@@ -1,0 +1,597 @@
+<script>
+
+/*
+ * Componentes da tela principal: 'item-area-transferencia', 'item-padroes-usuario', 'item-analise-texto', 'item-estatistica', 'view-principal'
+ **/
+
+Vue.component('item-area-transferencia', {
+    template: `
+        <div class="w3-card w3-white w3-margin">
+            <header class="w3-container" style="background-color: #C5CAE9;">
+                <p>
+                    <ui-icon icon="clipboard" fixed></ui-icon>
+                    Área de Transferência
+                </p>
+            </header>
+            <div class="w3-container w3-padding-16">
+                <ui-button :loading="copiando" :disabled="colando" icon="clone" class="action" @click.native="copiar()">Copiar</ui-button>
+                <ui-button :loading="colando" :disabled="copiando" icon="clipboard" @click.native="colar()">Colar</ui-button>
+            </div>
+        </div>
+    `,
+    data() {
+        return {
+            copiando: false,
+            colando: false,
+        }
+    },
+    methods: {
+        copiar() {
+            this.copiando = true;
+            this.$google.script.run
+                .withSuccessHandler(function (resposta, context) {
+                    context.$log(resposta);
+                    context.copiando = false;
+                    context.$store.commit('notificarSucesso', JSON.parse(resposta));
+                })
+                .withFailureHandler(function (erro, context) {
+                    context.$log('ERRO ===> ' + erro);
+                    context.copiando = false;
+                    context.$store.commit('notificarErro', erro.message);
+                })
+                .withUserObject(this)
+                .copiarDados();
+        },
+        colar() {
+            this.colando = true;
+            this.$google.script.run
+                .withSuccessHandler(function (resposta, context) {
+                    context.$log(resposta);
+                    context.colando = false;
+                    context.$store.commit('notificarSucesso', JSON.parse(resposta));
+                })
+                .withFailureHandler(function (erro, context) {
+                    context.$log('ERRO ===> ' + erro);
+                    context.colando = false;
+                    context.$store.commit('notificarErro', erro.message);
+                })
+                .withUserObject(this)
+                .colarDados();
+        },
+        fechar() {
+            this.copiando = false;
+            this.colando = false;
+        }
+    },
+});
+
+Vue.component('item-padroes-usuario', {
+    template: `
+        <div class="w3-card w3-white w3-margin">
+            <header class="w3-container" style="background-color: #C5E1A5;">
+                <p>
+                    <ui-icon icon="cloud" fixed></ui-icon>
+                    Padrões do usuário
+                </p>
+            </header>
+            <div class="w3-container w3-padding-16">
+                <ui-button :loading="salvando" :disabled="baixando" icon="cloud-upload" class="share" @click.native="salvar()">Salvar</ui-button>
+                <ui-button :loading="baixando" :disabled="salvando" icon="cloud-download" @click.native="baixar()">Baixar</ui-button>
+            </div>
+            <ui-dialog v-if="selecionarSalvar" animated type="checkbox" :options="opcoesSalvar" v-model="selecionadosSalvar"  title="Opções" :message="msgOpcoesSalvar" :empty="msgNenhumaOpcao" showToggleAll :toggleLabel="toggleLabel" @close="fechar()">
+                <ui-button v-if="opcoesSalvar.length > 0" class="action" @click.native="enviarDados()">Ok</ui-button>
+                <ui-button v-if="opcoesSalvar.length > 0" @click.native="fechar()">Cancelar</ui-button>
+            </ui-dialog>
+            <ui-dialog v-if="selecionarBaixar" animated type="checkbox" :options="opcoesBaixar" v-model="selecionadosBaixar" title="Opções" :message="msgOpcoesBaixar" :empty="msgNenhumaOpcao" showToggleAll :toggleLabel="toggleLabel" @close="fechar()">
+                <ui-button v-if="opcoesBaixar.length > 0" class="action" @click.native="obterDados()">Ok</ui-button>
+                <ui-button v-if="opcoesBaixar.length > 0" @click.native="fechar()">Cancelar</ui-button>
+            </ui-dialog>
+        </div>
+    `,
+    data() {
+        return {
+            salvando: false,
+            baixando: false,
+            selecionarSalvar: false,
+            selecionarBaixar: false,
+            selecionadosSalvar: [],
+            selecionadosBaixar: [],
+            msgOpcoesSalvar: 'Selecione o que deseja salvar:',
+            msgOpcoesBaixar: 'Selecione o que deseja baixar:',
+            toggleLabel: '<strong>Tudo</strong>',
+            msgNenhumaOpcao: '<div>Nenhuma opção disponível.<div>'
+        }
+    },
+    computed: {
+        dadosSalvar() {
+            return this.$store.state.padroesParaSalvar;
+        },
+        opcoesSalvar() {
+            return this.$store.state.padroesParaSalvar.map(obj => obj.rotulo);
+        },
+        dadosBaixar() {
+            return this.$store.state.padroesParaBaixar;
+        },
+        opcoesBaixar() {
+            return this.$store.state.padroesParaBaixar.map(obj => obj.rotulo);
+        }
+    },
+    methods: {
+        valoresIniciais() {
+            this.selecionadosSalvar = this.opcoesSalvar.map((x, i) => i);
+            this.selecionadosBaixar = this.opcoesBaixar.map((x, i) => i);
+        },
+        fechar() {
+            this.salvando = false;
+            this.baixando = false;
+            this.selecionarSalvar = false;
+            this.selecionarBaixar = false;
+            this.valoresIniciais();
+        },
+        salvar() {
+            this.selecionarSalvar = true;
+        },
+        enviarDados() {
+            this.selecionarSalvar = false;
+            if (Array.isArray(this.selecionadosSalvar) && this.selecionadosSalvar.length > 0) {
+                this.salvando = true;
+                var lista = this.selecionadosSalvar.map(item => this.dadosSalvar[item].intervalo);
+                this.$google.script.run
+                    .withSuccessHandler(function (resposta, context) {
+                        var dados = JSON.parse(resposta);
+                        context.$log(dados);
+                        context.$store.commit('atualizarInfoPadrao', dados);
+                        context.valoresIniciais();
+                        context.$store.commit('notificarSucesso', '<p>Informações salvas com sucesso</p>');
+                        context.salvando = false;
+                    })
+                    .withFailureHandler(function (erro, context) {
+                        context.$log('ERRO ===> ' + erro);
+                        context.salvando = false;
+                        context.$store.commit('notificarErro', erro.message);
+                    })
+                    .withUserObject(this)
+                    .salvarInfoPadrao(lista);
+            }
+        },
+        baixar() {
+            this.selecionarBaixar = true;            
+        },
+        obterDados() {
+            this.selecionarBaixar = false;
+            if (Array.isArray(this.selecionadosBaixar) && this.selecionadosBaixar.length > 0) {
+                this.baixando = true;
+                var lista = this.selecionadosBaixar.map(item => this.dadosBaixar[item].intervalo);
+                this.$google.script.run
+                    .withSuccessHandler(function (resposta, context) {
+                        var dados = JSON.parse(resposta);
+                        context.$log(dados);
+                        context.$store.commit('atualizarInfoPadrao', dados);
+                        context.valoresIniciais();
+                        context.$store.commit('notificarSucesso', '<p>Informações baixadas com sucesso</p>');
+                        context.baixando = false;
+                    })
+                    .withFailureHandler(function (erro, context) {
+                        context.$log('ERRO ===> ' + erro);
+                        context.baixando = false;
+                        context.$store.commit('notificarErro', erro.message);
+                    })
+                    .withUserObject(this)
+                    .baixarInfoPadrao(lista);
+            }
+        }
+    },
+    mounted() {
+        this.valoresIniciais();
+    }
+});
+
+Vue.component('item-analise-texto', {
+    template: `
+        <div>
+            <div class="w3-card w3-white w3-margin">
+                <header class="w3-container" :style="cssHeader">
+                    <p>
+                        <ui-icon :icon="setIcon" fixed></ui-icon>
+                        {{ titulo }}
+                    </p>
+                </header>
+                <div class="w3-container w3-padding-16" :style="cssContainer"> 
+                    <textarea v-if="!identificado && !enviando" v-model="texto" @input="$utils.debounce(verificar(), 500)" :style="cssTextArea" placeholder="Insira o texto aqui..."></textarea>
+                    <div v-else-if="identificado && !enviando" :style="cssTextArea">
+                        <div class="w3-padding">   
+                            <div v-html="htmlResumo"></div>
+                        </div>
+                    </div>
+                    <div v-else :style="cssTextArea" style="display: flex; justify-content: center; align-items: center">
+                        <ui-spinner size="normal"></ui-spinner>
+                    </div>
+                </div>
+                <footer class="w3-container w3-padding-16">
+                    <ui-button icon="bolt" 
+                               :disabled="!identificado || enviando" 
+                               class="action" 
+                               @click.native="abrirOpcoes()">
+                        Extrair
+                    </ui-button>
+                    <ui-button icon="trash" :disabled="texto.length === 0 || enviando" @click.native="apagar()">
+                        Apagar
+                    </ui-button>
+                </footer>
+                <ui-dialog v-if="selecionar" type="radio" animated :options="opcoes" v-model.number="opcao" title="Opções" :message="msgOpcoes"  @close="fechar()">
+                    <ui-button class="action" @click.native="enviarDados()">Ok</ui-button>
+                    <ui-button @click.native="fechar()">Cancelar</ui-button>                
+                </ui-dialog>
+            </div>
+        </div>
+    `,
+    data() {
+        return {
+            cssContainer: {
+                height: '216px',
+            },
+            texto: '',
+            titulo: 'Extrair dados de texto',
+            identificado: false,
+            enviando: false,
+            selecionar: false,
+            origem: null,
+            dados: null,
+            htmlResumo: '',
+            opcoes: [],
+            opcao: 0,
+            msgOpcoes: 'A planilha deve interpretar os dados como:'
+        };
+    },
+    computed: {
+        listaIntervalos() {
+            return this.$store.state.listaIntervalos;
+        },
+        setIcon() {
+            return this.identificado ? 'check' : 'magic';
+        },
+        cssHeader() {
+            var css = {
+                color: this.identificado ? 'white' : 'black',
+                backgroundColor: this.identificado ? '#1565C0' : '#ECEFF1'
+            };
+            return css;
+        },
+        cssTextArea() {
+            var css = {
+                width: '100%',
+                height: '200px',
+                maxHeight: '200px',
+                overflow: 'hidden',
+                resize: 'none',
+                boxShadow: this.identificado ? '0 0 10px #1565C0 inset' : 'none'
+            };
+            return css;
+        },
+    },
+    methods: {
+        reset() {
+            this.identificado = false;
+            this.dados = null;
+            this.origem = null;
+            this.htmlResumo = '';
+            this.opcoes = [];
+            this.titulo = 'Extrair informações de texto';
+        },
+        verificar() {
+            if (this.texto.length > 0) {
+                this.origem = this.$parser.testarOrigem(this.texto);
+                if (this.origem) {
+                    this.dados = this.$parser.processar(this.origem, this.texto, this.listaIntervalos);
+                    this.htmlResumo = this.dados.html;
+                    this.opcoes = this.dados.opcoes.map(grupo => grupo.ROTULO);
+                    this.opcao = this.opcoes.length - 1;
+                    this.titulo = this.origem.ROTULO;
+                    this.identificado = true;
+                } else {
+                    this.reset();
+                }
+            } else {
+                this.reset();
+            }
+        },
+        abrirOpcoes() {
+            this.selecionar = true;
+        },
+        enviarDados() {
+            this.selecionar = false;
+            this.enviando = true;
+            var params = {
+                opcao: this.dados.opcoes[this.opcao],
+                origem: this.origem,
+            };
+            var payload = JSON.stringify(params);
+            this.$google.script.run
+                .withSuccessHandler(function (resposta, context) {
+                    var dados = JSON.parse(resposta);
+                    context.$log(dados);
+                    context.enviando = false;
+                    context.$store.commit('notificarSucesso', dados);
+                })
+                .withFailureHandler(function (erro, context) {
+                    context.$log('ERRO ===> ' + erro);
+                    context.enviando = false;
+                    context.$store.commit('notificarErro', erro.message);
+                })
+                .withUserObject(this)
+                .preencher(payload);
+        },
+        apagar() {
+            this.texto = '';
+            this.verificar();
+        },
+        fechar() {
+            this.selecionar = false;
+            this.enviando = false;
+        }
+    },
+});
+
+Vue.component('item-estatistica', {
+    template: `
+        <div>
+            <div class="w3-card w3-white w3-margin">
+                <header class="w3-container" style="background-color: #80CBC4;">
+                    <p>
+                        <ui-icon icon="bar-chart" fixed></ui-icon>
+                        Registro estatístico
+                    </p>
+                </header>
+                <div class="w3-padding w3-border-bottom">
+                    <div style="padding-top: 8px; padding-bottom: 8px;" @click="mostrarComplemento = !mostrarComplemento">
+                        <ui-icon class="w3-right" :icon="mostrarComplemento ? 'chevron-up' : 'chevron-down'"></ui-icon>
+                        <label for="complemento">Complemento</label>
+                    </div>
+                    <ui-animation-slide>
+                        <div v-show="mostrarComplemento">
+                            <input type="text" name="complemento" style="width: 100%;" v-model="complemento"></input>
+                        </div>
+                    </ui-animation-slide>
+                </div>
+                <div class="w3-padding w3-border-bottom">
+                    <div style="padding-top: 8px; padding-bottom: 8px;" @click="mostrarObservacoes = !mostrarObservacoes">
+                        <ui-icon class="w3-right" :icon="mostrarObservacoes ? 'chevron-up' : 'chevron-down'"></ui-icon>
+                        <label for="observacoes">Observações</label>
+                    </div>
+                    <ui-animation-slide>
+                        <div v-show="mostrarObservacoes">
+                            <textarea name="observacoes" style="width: 100%;" rows="3" v-model="observacoes"></textarea>
+                        </div>
+                    </ui-animation-slide>
+                </div>
+                <div class="w3-display-container w3-padding w3-border-bottom">
+                    <ui-button icon="paper-plane" :loading="enviando" :disabled="testando || salvando" class="share" :disabled="urlServico === false || urlServico.length === 0 || !online" @click.native="obterDadosDoCalculo()">Enviar</ui-button>
+                    <ui-icon-button class="w3-display-right w3-hover-light-grey w3-margin-right" icon="eraser" @click.native="complemento = ''; observacoes = ''" fixed></ui-icon-button>
+                </div>
+            </div>
+            <div v-if="urlServico !== false" class="w3-card w3-white w3-margin">
+                <header class="w3-container" style="background-color: #B2DFDB;">
+                    <p>
+                        <ui-icon icon="link" fixed></ui-icon>
+                        Serviço de estatística
+                        <span class="w3-right">
+                            <ui-icon icon="circle" :style="cssStatus" :title="status"></ui-icon>
+                        </span>
+                    </p>
+                </header>
+                <div>
+                    <ui-animation-slide>
+                        <ul class="w3-ul w3-border-bottom" v-if="dadosServico.length > 0 && !areaEdicaoAberta">
+                            <li v-for="(item, index) in dadosServico" v-show="item.rotulo.length > 0" :title="item.valor" :class="{ 'w3-display-container': (index === 0) }">
+                                <div :style="cssDadosServico">
+                                    <span class="w3-text-teal"><strong>{{ item.rotulo }}:</strong></span>
+                                    <br>
+                                    <span class="w3-small"> {{ item.valor }} </span>
+                                </div>
+                                <div v-if="index === 0" class="w3-display-right w3-margin-right">
+                                    <span class="w3-round w3-border w3-padding w3-hover-light-gray" @click="areaEdicaoAberta = true">
+                                        <ui-icon icon="pencil"></ui-icon>
+                                    </span>
+                                </div>
+                            </li>
+                        </ul>
+                    </ui-animation-slide>
+                </div>
+                <ui-animation-slide>
+                    <div v-if="dadosServico.length === 0 || !online" class="w3-container w3-padding-16">
+                        <ui-button icon="plus" class="action" :disabled="testando || salvando || enviando" @click.native="areaEdicaoAberta = true">Novo</ui-button>
+                        <ui-button icon="wifi" :loading="testando" :disabled="online || salvando || enviando || urlServico.length === 0" @click.native="testarServico(urlServico, false)">Testar</ui-button>
+                    </div>
+                </ui-animation-slide>
+                <ui-animation-slide>
+                    <div v-show="areaEdicaoAberta" class="w3-container" style="padding-top:8px;padding-bottom:8px;">
+                        <div class="w3-display-container" style="padding-top: 16px;">
+                            <div class="w3-display-right">
+                                <ui-close class="w3-text-grey" @click.native="areaEdicaoAberta = false"></ui-close>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="url">Insira o url do serviço:</label>
+                            <input name="url" type="url" v-model="url" style="width: 100%"></input>
+                        </div>
+                        <div style="padding-top:8px;padding-bottom:8px;">
+                            <ui-button icon="check" :loading="salvando" :disabled="url.length === 0 || testando || enviando" class="action" @click.native="registrarNovoServico()">Salvar</ui-button>
+                        </div>
+                    </div>
+                </ui-animation-slide>
+            </div>
+            <ui-dialog v-if="info" type="info" animated title="Dados do cálculo" :message="textoDadosCalculo" @close="fechar()">
+                <ui-button class="action" @click.native="registrarCalculo()">Confirmar</ui-button>
+                <ui-button @click.native="fechar()">Cancelar</ui-button>
+            </ui-dialog>
+        </div>
+    `,
+    data: function () {
+        return {
+            cssDadosServico: {
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+            },
+            testando: false,
+            salvando: false,
+            enviando: false,
+            info: false,
+            msgErro: MENSAGEM_ERRO_PADRAO,
+            msgSucesso: MENSAGEM_SUCESSO_PADRAO,
+            msgAlerta: '',
+            dadosServico: [],
+            dadosCalculo: {},
+            complemento: '',
+            observacoes: '',
+            mostrarComplemento: false,
+            mostrarObservacoes: false,
+            url: '',
+            online: false,
+            areaEdicaoAberta: false,
+        };
+    },
+    computed: {
+        urlServico() {
+            return this.$store.state.urlEstatistica;
+        },
+        status() {
+            return 'status: ' + (this.urlServico.length === 0 ? 'nenhum serviço registrado' : (this.online ? 'online' : 'offline'));
+        },
+        cssStatus() {
+            if (this.urlServico.length === 0) {
+                return {
+                    color: 'grey',
+                };
+            } else {
+                return this.online ? {
+                    color: '#00C853'
+                } : {
+                        color: 'orangered'
+                    };
+            }
+        },
+        textoDadosCalculo() {
+            if (this.dadosCalculo.html) {
+                return this.dadosCalculo.html;
+            } else {
+                return this.dadosCalculo;
+            }
+        }
+    },
+    methods: {
+        testarServico(url, modoSilencioso) {
+            this.testando = true;
+            this.$google.script.run
+                .withSuccessHandler(function (resposta, context) {
+                    context.testando = false;
+                    var dados = JSON.parse(resposta);
+                    context.$log(dados);
+                    context.dadosServico = dados.dadosServico;
+                    context.$store.commit('atualizarUrlEstatistica', dados.url);
+                    context.online = true;
+                    if (!modoSilencioso) {
+                        context.$store.commit('notificarSucesso', '<p>O serviço está online.</p>');
+                    }
+                })
+                .withFailureHandler(function (erro, context) {
+                    context.$log(erro);
+                    context.testando = false;
+                    if (!modoSilencioso) {
+                        context.$store.commit('notificarErro', erro.message);
+                    }
+                })
+                .withUserObject(this)
+                .testarServicoEstatistico(url);
+        },
+        registrarNovoServico() {
+            this.salvando = true;
+            this.$google.script.run
+                .withSuccessHandler(function (resposta, context) {
+                    var dados = JSON.parse(resposta);
+                    context.$log(dados);
+                    context.dadosServico = dados.dadosServico;
+                    context.areaEdicaoAberta = false;
+                    context.salvando = false;
+                    context.$store.commit('atualizarUrlEstatistica', dados.url);
+                    context.url = '';
+                    context.online = true;
+                    context.$store.commit('notificarSucesso', '<p>Serviço registrado com sucesso</p>');
+                })
+                .withFailureHandler(function (erro, context) {
+                    context.$log(erro);
+                    context.salvando = false;
+                    context.$store.commit('notificarErro', erro.message);
+                })
+                .withUserObject(this)
+                .registrarServicoEstatistico(this.url);
+        },
+        obterDadosDoCalculo() {
+            this.enviando = true;
+            this.$google.script.run
+                .withSuccessHandler(function (resposta, context) {
+                    var dados = JSON.parse(resposta);
+                    context.$log(dados);
+                    this.enviando = false;
+                    if (dados.payload && dados.html) {
+                        context.dadosCalculo = dados;
+                        context.info = true;
+                    } else {
+                        context.$store.commit('notificarAlerta', '<p>Houve falha na comunicação com o servidor. Os dados não foram recebidos na forma esperada.</p>');
+                    }
+                })
+                .withFailureHandler(function (erro, context) {
+                    context.$log('ERRO ===> ' + erro);
+                    context.enviando = false;
+                    context.$store.commit('notificarErro', erro.message);
+                })
+                .withUserObject(this)
+                .obterDadosDoCalculo(this.complemento, this.observacoes);
+        },
+        registrarCalculo() {
+            this.info = false;
+            this.enviando = true;
+            var payload = JSON.stringify(this.dadosCalculo.payload);
+            this.$google.script.run
+                .withSuccessHandler(function (resposta, context) {
+                    var dados = JSON.parse(resposta);
+                    context.$log(resposta);
+                    context.enviando = false;
+                    context.$store.commit('notificarSucesso', dados);
+                })
+                .withFailureHandler(function (erro, context) {
+                    context.$log('ERRO ===> ' + erro);
+                    context.enviando = false;
+                    context.$store.commit('notificarErro', erro.message);
+                })
+                .withUserObject(this)
+                .registrarCalculo(payload);
+        },
+        fechar() {
+            this.testando = false;
+            this.salvando = false;
+            this.enviando = false;
+            this.info = false;
+        }
+    },
+    mounted() {
+        if (this.$utils.isString(this.urlServico) && this.urlServico.length > 0) {
+            this.testarServico(this.urlServico, true);
+        }
+    }
+});
+
+Vue.component('view-principal', {
+    template: `
+        <ui-tabs :icons="icons" :components="components"></ui-tabs>
+    `,
+    data() {
+        return {
+            titles: ['Copiar', 'Padrão', 'Texto', 'Estatística'],
+            icons: ['clipboard', 'cloud', 'magic', 'bar-chart'],
+            components: ['item-area-transferencia', 'item-padroes-usuario', 'item-analise-texto', 'item-estatistica']
+        }
+    },
+});
+
+</script>

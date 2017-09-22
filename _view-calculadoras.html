@@ -1,0 +1,264 @@
+<script>
+
+/*
+* Componentes da tela de calculadoras: 
+* 'calculadora-intervalo', 'calculadora-prescricao', 'calculadora-tempo', 'view-calculadoras'.
+**/
+
+Vue.component('calculadora-intervalo', {
+    template: `
+        <div class="w3-card w3-white w3-margin" style="padding-top: 16px; padding-bottom: 8px;">
+            <div class="w3-container">
+                <ui-button-group :labels="metodos" width="77px" v-model="metodo" @change="calcularTotalDias()"></ui-button-group>
+                <div class="w3-cell-row" style="padding-top: 16px; padding-bottom: 8px;">
+                    <ui-input-date style="font-size: larger;" class="w3-cell" width="108px" v-model="inicio" label="Data inicial" validation="Inválida" @change.native="calcularTotalDias()"></ui-input-date>
+                    <ui-input-date style="font-size: larger;" class="w3-cell" width="108px" v-model="fim" label="Data final" validation="Inválida" @change.native="calcularTotalDias()"></ui-input-date>
+                </div>
+                <div class="w3-cell-row">
+                    <ui-input-number style="font-size: larger;" class="w3-cell" width="70px" readonly v-model.number="anos" label="Anos"></ui-input-number>
+                    <ui-input-number style="font-size: larger;" class="w3-cell" width="70px" readonly v-model.number="meses" label="Meses"></ui-input-number>
+                    <ui-input-number style="font-size: larger;" class="w3-cell" width="70px" readonly v-model.number="dias" label="Dias"></ui-input-number>
+                </div>
+                <div class="w3-cell-row">
+                    <ui-input-number style="font-size: larger;" class="w3-cell" width="70px" readonly v-model="totalDias" label="Dias (total)"></ui-input-number>
+                </div>
+                <ui-fab class="w3-right" icon="trash-b" @click.native.prevent="apagar()"></ui-fab>
+            </div>
+        </div>
+    `,
+    data () {
+        return {
+            metodos: ['EXCEL', 'EUR', 'US/NASD'],
+            metodo: 0,
+            inicio: new Date().toJSON().slice(0,10),
+            fim: new Date().toJSON().slice(0,10),
+            totalDias: 0,
+            anos: 0,
+            meses: 0,
+            dias: 0,
+        }
+    },
+    methods: {
+        calcularTotalDias() {
+        
+            var dataInicial = this.$utils.tentarConverterEmData(this.inicio);
+            var dataFinal = this.$utils.tentarConverterEmData(this.fim);
+        
+            if (this.$utils.isDate(dataInicial) && this.$utils.isDate(dataFinal)) {
+            
+                var totalDias = (dataInicial <= dataFinal) 
+                ? this.$utils.dias360(this.inicio, this.fim, this.metodo) 
+                : this.$utils.dias360(this.fim, this.inicio, this.metodo);
+
+                var anos = Math.floor(totalDias/360);
+                var meses = Math.floor((totalDias - (anos * 360))/30); 
+                var dias = totalDias - (anos * 360) - (meses * 30);
+                
+                if (dataInicial <= dataFinal) {
+                    this.totalDias = totalDias;
+                    this.anos = anos;
+                    this.meses = meses;
+                    this.dias = dias;
+                } else {
+                    this.totalDias = totalDias * -1;
+                    this.anos = anos * - 1;
+                    this.meses = meses * -1;
+                    this.dias = dias * -1;
+                } 
+            } else {
+                this.totalDias = 0;
+                this.anos = 0;
+                this.meses = 0; 
+                this.dias = 0;
+            }
+        },
+        apagar() {
+            this.metodo = 0;
+            this.inicio = new Date().toJSON().slice(0,10);
+            this.fim = new Date().toJSON().slice(0,10);
+            this.totalDias = 0;
+            this.anos = 0;
+            this.meses = 0;
+            this.dias = 0;
+        }
+    },
+    created() {
+        this.apagar();
+    }
+});
+
+Vue.component('calculadora-prescricao', {
+    template: `
+        <div class="w3-card-4 w3-white w3-margin" style="padding-top: 16px; padding-bottom: 8px;">
+            <div class="w3-container">
+                <div class="w3-cell-row">
+                    <ui-input-number style="font-size: larger;" class="w3-cell" label="Prazo (meses)" width="108px" v-model.number="prazo" @change="calcularPrescricao()"></ui-input-number>
+                </div>
+                <div class="w3-cell-row" style="padding-top: 8px; padding-bottom: 8px;">
+                    <ui-input-date style="font-size: larger;" class="w3-cell" label="Termo inicial" width="108px" v-model="termoInicial" validation="Inválida" @change="calcularPrescricao()"></ui-input-date>
+                    <ui-input-date style="font-size: larger;" class="w3-cell" label="Interrupção" width="108px" v-model="marcoInterruptivo" validation="Inválida" @change="calcularPrescricao()"></ui-input-date>
+                </div>
+                <div class="w3-cell-row">
+                    <ui-input-date style="font-size: larger;" class="w3-cell" label="Início susp." width="108px" v-model="inicioSuspensao" validation="Inválida" @change="calcularPrescricao()"></ui-input-date>
+                    <ui-input-date style="font-size: larger;" class="w3-cell" label="Término susp." width="108px" v-model="fimSuspensao" validation="Inválida" @change="calcularPrescricao()"></ui-input-date>
+                </div>
+                <div class="w3-cell-row w3-margin-top">
+                    <ui-input-number style="font-size: larger;" class="w3-cell" label="Suspen. (dias)" readonly width="108px" v-model.number="diasSuspensao"></ui-input-number>
+                    <ui-input-date style="font-size: larger;" class="w3-cell" label="Marco prescr." validation="Inválida" readonly width="108px" v-model="marcoPrescricional"></ui-input-date>
+                </div>
+                <ui-fab class="w3-right" icon="trash-b" @click.native.prevent="apagar()"></ui-fab>
+            </div>
+        </div>
+    `,
+    data () {
+        return {
+            prazo: 0,
+            termoInicial: new Date().toJSON().slice(0,10),
+            marcoInterruptivo: new Date().toJSON().slice(0,10),
+            inicioSuspensao: new Date().toJSON().slice(0,10),
+            fimSuspensao: new Date().toJSON().slice(0,10),
+            diasSuspensao: 0,
+            marcoPrescricional: new Date().toJSON().slice(0,10),
+        }
+    },
+    methods: {
+        calcularPrescricao() {
+        
+            var params = {
+                termoInicial: this.termoInicial,
+                marcoInterruptivo: this.marcoInterruptivo,
+                inicioSuspensao: this.inicioSuspensao,
+                fimSuspensao: this.fimSuspensao,
+                prazo: this.prazo
+            };
+
+            var resultado = this.$utils.calcularPrescricao(params);
+
+            if (this.$utils.isObject(resultado) && 'diasSuspensao' in resultado) {
+                this.diasSuspensao = resultado.diasSuspensao;
+            }
+            
+            if (this.$utils.isObject(resultado) && 'marcoPrescricional' in resultado) {
+                this.marcoPrescricional = resultado.marcoPrescricional;
+            }
+        },
+        apagar() {
+            this.prazo = 60;
+            this.marcoInterruptivo = this.$store.state.marcoInterruptivo;
+            this.termoInicial = this.$store.state.termoInicial;
+            this.inicioSuspensao = new Date().toJSON().slice(0,10);
+            this.fimSuspensao = new Date().toJSON().slice(0,10);
+            this.calcularPrescricao();
+        }
+    },
+    created() {
+        this.apagar();
+    }
+});
+
+Vue.component('calculadora-tempo', {
+    template: `
+        <div class="w3-card-4 w3-white w3-margin w3-padding-16">
+            <div class="w3-container w3-border-bottom">
+                <div class="w3-cell-row">
+                    <ui-input-number style="font-size: larger;" class="w3-cell" label="Anos" width="70px" v-model.number="anosPrimeiro" @change="recalcular()"></ui-input-number>
+                    <ui-input-number style="font-size: larger;" class="w3-cell" label="Meses" width="70px" v-model.number="mesesPrimeiro" @change="recalcular()"></ui-input-number>
+                    <ui-input-number style="font-size: larger;" class="w3-cell" label="Dias" width="70px" v-model.number="diasPrimeiro" @change="recalcular()"></ui-input-number>
+                </div>
+                <div class="w3-padding-16">
+                    <div class="w3-display-container">
+                        <ui-button-group class="w3-display-middle" style="width: 90px" :icons="['plus', 'minus']" :labels="['', '']" width="45px" v-model="operacao" @change="recalcular()"></ui-button-group>
+                    </div>
+                </div>
+                <div class="w3-cell-row" style="padding-top: 16px; padding-bottom: 8px;">
+                    <ui-input-number style="font-size: larger;" class="w3-cell" label="Anos" width="70px" v-model.number="anosSegundo" @change="recalcular()"></ui-input-number>
+                    <ui-input-number style="font-size: larger;" class="w3-cell" label="Meses" width="70px" v-model.number="mesesSegundo" @change="recalcular()"></ui-input-number>
+                    <ui-input-number style="font-size: larger;" class="w3-cell" label="Dias" width="70px" v-model.number="diasSegundo" @change="recalcular()"></ui-input-number>
+                </div>
+            </div>
+            <div class="w3-container">
+                <div style="padding-top: 16px;">
+                    <div class="w3-cell-row">
+                        <ui-input-number style="font-size: larger;" class="w3-cell" readonly label="Anos" width="70px" v-model.number="anosResultado"></ui-input-number>
+                        <ui-input-number style="font-size: larger;" class="w3-cell" readonly label="Meses" width="70px" v-model.number="mesesResultado"></ui-input-number>
+                        <ui-input-number style="font-size: larger;" class="w3-cell" readonly label="Dias" width="70px" v-model.number="diasResultado"></ui-input-number>
+                    </div>
+                    <div class="w3-cell-row" style="padding-top: 16px;">
+                        <ui-input-number style="font-size: larger;" class="w3-cell" readonly label="Total dias" width="70px" v-model.number="totalDias"></ui-input-number>
+                    </div>
+                    <ui-fab class="w3-right" icon="trash-b" @click.native.prevent="apagar()"></ui-fab>
+                </div>
+            </div>
+        </div>
+    `,
+    data () {
+        return {
+            operacao: 0,
+            anosPrimeiro: 0,
+            mesesPrimeiro: 0,
+            diasPrimeiro: 0,
+            anosSegundo: 0,
+            mesesSegundo: 0,
+            diasSegundo: 0,
+            anosResultado: 0,
+            mesesResultado: 0,
+            diasResultado: 0,
+            totalDias: 0,
+        }
+    },
+    methods: {
+        recalcular() {
+            var totalDiasPrimeiro = ((this.anosPrimeiro || 0) * 360) + ((this.mesesPrimeiro || 0) * 30) + (this.diasPrimeiro || 0);
+            var totalDiasSegundo = ((this.anosSegundo || 0) * 360) + ((this.mesesSegundo || 0) * 30) + (this.diasSegundo || 0);
+            var totalDias = this.operacao === 0 ? totalDiasPrimeiro + totalDiasSegundo : totalDiasPrimeiro - totalDiasSegundo;
+            if (totalDias >= 0) {
+                var anos = Math.floor(totalDias / 360);
+                var meses = Math.floor((totalDias - (anos * 360)) / 30);
+                var dias = (totalDias - (anos * 360) - (meses * 30));
+            } else {
+                totalDias *= -1;
+                var anos = Math.floor(totalDias / 360);
+                var meses = Math.floor((totalDias - (anos * 360)) / 30);
+                var dias = (totalDias - (anos * 360) - (meses * 30));
+                totalDias *= -1;
+                anos *= -1;
+                meses *= -1;
+                dias *= -1;
+            }
+            this.totalDias = totalDias;
+            this.anosResultado = anos;
+            this.mesesResultado = meses;
+            this.diasResultado = dias;
+        },
+        apagar() {
+            this.operacao = 0;
+            this.anosPrimeiro = 0;
+            this.mesesPrimeiro = 0;
+            this.diasPrimeiro = 0;
+            this.anosSegundo = 0;
+            this.mesesSegundo = 0;
+            this.diasSegundo = 0;
+            this.anosResultado = 0;
+            this.mesesResultado = 0;
+            this.diasResultado = 0;
+            this.totalDias = 0;
+        }
+    },
+    created() {
+        this.apagar();
+    }
+});
+
+Vue.component('view-calculadoras', {
+    template: `
+        <ui-tabs :titles="titles" :components="components"></ui-tabs>
+    `,
+    data() {
+        return {
+            titles: ['Intervalo', 'Prescrição', 'Tempo'],
+            components: ['calculadora-intervalo', 'calculadora-prescricao', 'calculadora-tempo']
+        }
+    },
+});
+
+</script>

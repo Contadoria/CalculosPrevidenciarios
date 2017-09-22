@@ -1,0 +1,678 @@
+<script>
+
+/*
+* Componentes para auxiliar na criação da interface com o usuário: 
+* 'ui-icon', 'ui-button', 'ui-fab', 'ui-button-group', 'ui-modal', 'ui-spinner', 'ui-dialog'
+* 'ui-input-date', 'ui-input-number', ui-toolbar', 'ui-sidebar'
+**/
+
+Vue.component('ui-icon', {
+    props: ['icon', 'size', 'fixed', 'hover'],
+    template: `
+        <i ref="icon" :class="'fa fa-' + icon + (isFixed ? ' fa-fw' : '') + (hasSize ? ' fa-' + size : '')" @mouseenter="hoverIn" @mouseleave="hoverOut()"></i>
+    `,
+    computed: {
+        setHover() {
+            return this.hover !== null && this.hover !== undefined && this.hover !== false;
+        },
+        isFixed() {
+            return (this.fixed !== null && this.fixed !== undefined && this.fixed !== false);
+        },
+        hasSize() {
+            return (this.size !== null && this.size !== undefined && this.size !== false);
+        }
+    },
+    methods: {
+        hoverIn() {
+            if (this.setHover) {
+                this.$refs.icon.style.opacity = this.originalOpacity;
+            }
+        },
+        hoverOut() {
+            if (this.setHover) {
+                this.$refs.icon.style.opacity = this.originalOpacity / 2;
+            }
+        }
+    },
+    mounted() {
+        this.originalOpacity = this.$refs.icon.style.opacity || 1;
+        if (this.setHover) {
+            this.hoverOut();
+        }
+    }
+});
+
+Vue.component('ui-button', {
+    props: ['loading', 'disabled', 'icon'],
+    template: `
+        <button :disabled="isDisabled">
+            <span :style="cssSpinner">
+                <ui-spinner size="small" mono :style="cssSpinner"></ui-spinner>
+            </span>
+            <span :style="cssDisplay">
+                <ui-icon v-if="icon" :icon="icon" style="margin-right: 4px"></ui-icon>
+                <span style="display: inline; line-height: 100%;">
+                    <slot></slot>
+                </span>
+            </span>
+        </button>
+    `,
+    computed: {
+        cssSpinner() {
+            return (this.loading !== null && this.loading !== undefined && this.loading !== false) 
+            ? { display: 'inline-block', verticalAlign:'middle', lineHeight: '100%' } 
+            : { display: 'none' };
+        },
+        cssDisplay() {
+            return (this.loading !== null && this.loading !== undefined && this.loading !== false) 
+            ? { display: 'none' } 
+            : { display: 'inline', verticalAlign:'middle', lineHeight: '100%' };
+        },
+        isDisabled() {
+            return (this.loading !== null && this.loading !== undefined && this.loading !== false)
+            || (this.disabled !== null && this.disabled !== undefined && this.disabled !== false);
+        },
+    },
+});
+
+Vue.component('ui-icon-button', {
+    props: ['icon', 'disabled', 'loading'],
+    template: `
+        <div :style="cssContainer" class="w3-border w3-round"  :class="{ 'w3-disabled': isDisabled, 'w3-hover-opacity': !isDisabled }">
+            <span :style="cssSpinner">
+                <ui-spinner size="small" mono :style="cssSpinner"></ui-spinner>
+            </span>
+            <span :style="cssDisplay">
+                <ui-icon :icon="icon"></ui-icon>
+            </span>
+        </div>
+    `,
+    data() {
+        return {
+            cssContainer: {
+                cursor: 'default',
+                height: '29px',
+                lineHeight: '27px',
+                margin: '0',
+                minWidth: '48px',
+                outline: '0',
+                padding: '0 8px',
+                textAlign: 'center',
+                whiteSpace: 'nowrap',
+                boxSizing: 'border-box',
+                display: 'inline-block',
+            },
+        };
+    },
+    computed: {
+        cssSpinner() {
+            return this.isLoading ? { display: 'inline-block', verticalAlign:'middle', lineHeight: '100%' } : { display: 'none' };
+        },
+        cssDisplay() {
+            return this.isLoading ? { display: 'none' } : { display: 'inline', verticalAlign:'middle', lineHeight: '100%' };
+        },
+        isDisabled() {
+            return (this.disabled !== null && this.disabled !== undefined && this.disabled !== false);
+        },
+        isLoading() {
+            return (this.loading !== null && this.loading !== undefined && this.loading !== false);
+        }
+    }
+});
+
+Vue.component('ui-fab', {
+    props: ['loading', 'disabled', 'icon'],
+    template: `
+        <div :style="cssFab" class="w3-button w3-hover-light-gray" :class="{ 'w3-disabled': setDisabled }">
+            <ui-spinner size="small" mono :style="cssLoader"></ui-spinner>
+            <span :style="cssDisplay">
+                <ui-icon v-if="icon" size="lg" :icon="icon"></ui-icon>
+                <slot></slot>
+            </span>
+        </div>
+    `,
+    computed: {
+        cssLoader() {
+            return (this.loading !== null && this.loading !== undefined && this.loading !== false) 
+            ? { display: 'block', marginTop: '3px' } 
+            : { display: 'none' };
+        },
+        cssDisplay() {
+            return (this.loading !== null && this.loading !== undefined && this.loading !== false) 
+            ? { display: 'none' } 
+            : { display: 'inline' };
+        },
+        cssFab() {
+            return {
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: '2',
+                outline: 'none',
+                '-webkit-user-select': 'none',
+                userSelect: 'none',
+                cursor: 'pointer',
+                width: '42px',
+                height: '42px',
+                fontSize: '18px',
+                borderRadius: '50%',
+                border: '0',
+                overflow: 'hidden',
+            };
+        },
+        setDisabled() {
+            return (this.loading !== null && this.loading !== undefined && this.loading !== false)
+            || (this.disabled !== null && this.disabled !== undefined && this.disabled !== false);
+        },
+    },
+});
+
+Vue.component('ui-button-group', {
+    props: ['value', 'labels', 'icons', 'width'],
+    template: `
+        <div class="w3-bar">
+            <div v-for="(item, index) in list" class="w3-bar-item w3-button w3-tiny" 
+                :class="{ 'w3-grey': value === index, 'w3-light-grey': value !== index }"
+                :style="{ width: width || '100%' }" 
+                @click="select(index)">
+                <span v-if="hasIcons">
+                    <ui-icon :icon="icons[index]" size="lg"></ui-icon>
+                </span>
+                <span v-if="item.length > 0">
+                    {{ item }}
+                </span>
+            </div>
+        </div>
+    `,
+    computed: {
+        list() {
+            return Array.isArray(this.labels) ? this.labels : [this.labels];
+        },
+        hasIcons() {
+            return Array.isArray(this.icons) && Array.isArray(this.labels) && this.icons.length === this.labels.length;
+        }
+    },
+    methods: {
+        select(index) {
+            this.$emit('input', index);
+            this.$emit('change', index);
+        }
+    }
+});
+
+Vue.component('ui-modal', {
+    props: ['animated'],
+    template: `
+        <div class="w3-modal" style="display: flex; justify-content: center; align-items: flex-start">
+            <div class="w3-modal-content w3-margin" :class="{ 'w3-animate-top': hasAnimation }">
+                <slot></slot>
+            </div>
+        </div>
+    `,
+    computed: {
+        hasAnimation() {
+            return (this.animated !== null && this.animated !== undefined && this.animated !== false);
+        },
+    }
+});
+
+Vue.component('ui-spinner', {
+    props: ['size', 'overlay', 'mono'],
+    template: `
+        <div style="display: flex; justify-content: center; align-items: center" :class="applyOverlay">
+            <svg class="spinner" :width="getSize" :height="getSize" viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
+                <circle :class="getColor" fill="none" stroke-width="6" stroke-linecap="round" cx="33" cy="33" r="30"></circle>
+            </svg>        
+        </div>
+    `,
+    computed: {
+        getSize() {
+            return (this.size === 'small') ? '16px' : (this.size === 'large') ? '48px' : '32px';
+        },
+        getColor() {
+            return (this.mono !== null && this.mono !== undefined && this.mono !== false) ? 'path-mono' : 'path';
+        },
+        applyOverlay() {
+            return (this.overlay !== null && this.overlay !== undefined && this.overlay !== false) ? 'w3-modal lighter' : '';
+        },
+    },
+});
+
+Vue.component('ui-close', {
+    template: `
+        <span style="cursor: default; user-select: none;">
+            <ui-icon icon="times" hover></ui-icon>
+        </span>
+    `,
+});
+
+Vue.component('ui-dialog', {
+    props: ['type', 'title', 'message', 'empty', 'options', 'value', 'showToggleAll', 'toggleLabel', 'showCloseMark', 'animated'],
+    template: `
+        <div>
+            <ui-modal :animated="hasAnimation">
+                <div class="w3-card-4" style="border: 1px solid grey">
+                    <header class="w3-container">
+                        <h6 :style="{ color: color, fontWeight: 'bold' }">
+                            <ui-close v-if="hasCloseMark" class="w3-right w3-text-grey" @click.native="close()"></ui-close>
+                            <ui-icon v-if="type.length > 0" :icon="icon" fixed></ui-icon>
+                            {{ title }} 
+                        </h6>
+                    </header>
+                    <div class="w3-container w3-padding">
+                        <span v-if="showMessage" v-html="message"></span>
+                        <ul v-if="radio || checkbox" :style="cssList">
+                            <template v-if="hasOptions">
+                                <li v-if="hasToggleAll" @click="toggleAll()" :style="[cssListItem, cssToggleAll]">
+                                    <label for="toggleAll" :style="cssLabel">
+                                        <input ref="toggleAll" name="toggleAll" type="checkbox" :checked="selected.length === options.length" :style="cssInput"></input>
+                                        <span v-html="toggleLabel"></span>
+                                    </label>
+                                </li>
+                                <li v-for="(item, index) in options" @click="inputHandler(index)" :style="cssListItem">
+                                    <label :for="(radio ? 'radio-' : 'checkbox-') + index" :style="cssLabel">
+                                        <input v-if="radio" type="radio" name="options" :id="'radio-' + index" :value="index" :checked="index === option" :style="cssInput" v-model.number="option"></input>
+                                        <input v-else type="checkbox" name="options" :id="'checkbox-' + index" :value="index" :checked="selected.indexOf(index) >= 0" :style="cssInput" v-model="selected"></input>
+                                        <span v-html="item"></span>
+                                    </label>
+                                </li>
+                            </template>
+                            <template v-else>
+                                <li :style="cssListItem">
+                                    <div class="w3-container w3-padding-16" v-html="empty"></div>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                    <footer class="w3-container w3-padding">
+                        <slot></slot>
+                    </footer>
+                </div>
+            </ui-modal>
+        </div>
+    `,
+    data() {
+        return {
+            cssList: {
+                marginLeft: '0', 
+                paddingLeft: '0'                
+            },
+            cssListItem: {
+                listStyleType: 'none',
+                marginBottom: '0.5em'                
+            },
+            cssToggleAll: {
+                marginBottom: '1em'                
+            },
+            cssLabel: {
+                display: 'block',
+            },
+            cssInput: {
+                marginRight: '3px'                
+            },
+            icons: {
+                radio: 'list-ul',
+                checkbox: 'list-ul',
+                error: 'times-circle',
+                success: 'check-circle',
+                alert: 'exclamation-circle',
+                info: 'info-circle',
+                question: 'question-circle',
+                default: 'comment fa-flip-horizontal'
+            },
+            colors: {
+                radio: '#1976D2',
+                checkbox: '#1976D2',
+                error: '#D32F2F',
+                success: '#689F38',
+                alert: '#F57C00',
+                info: '#1976D2',
+                question: 'grey',
+                default: 'grey'
+            },
+            option: 0,
+            selected: [],
+        }
+    },
+    computed: {
+        radio() {
+            return this.type === 'radio';
+        },
+        checkbox() {
+            return this.type === 'checkbox';
+        },
+        hasOptions() {
+            return Array.isArray(this.options) && this.options.length > 0;
+        },
+        hasCloseMark() {
+            return this.showCloseMark !== false;
+        },
+        hasToggleAll() {
+            return this.checkbox && this.showToggleAll !== false && this.toggleLabel && this.toggleLabel.length > 0;
+        },
+        hasAnimation() {
+            return (this.animated !== null && this.animated !== undefined && this.animated !== false);
+        },
+        showMessage() {
+            if (this.radio || this.checkbox) {
+                return this.message && this.message.length > 0 && this.options.length > 0;
+            } 
+            return this.message && this.message.length > 0;
+        },
+        icon() {
+            return (this.type && this.icons[this.type]) || this.icons.default;
+        },
+        color() {
+            return (this.type && this.colors[this.type]) || this.colors.default;
+        }
+    },
+    methods: {
+        toggleAll() {
+            this.selected = this.selected.length === 0 ? this.options.map((v, i) => i) : [];
+            this.$emit('input', this.selected);
+        },
+        toggleAllState() {
+            if (this.hasToggleAll && this.$refs.toggleAll) {
+                this.$refs.toggleAll.indeterminate = (this.selected.length > 0 && this.selected.length < this.options.length);
+            }
+        },
+        inputHandler(event) {
+            if (this.checkbox) {
+                this.$emit('input', this.selected);
+                this.toggleAllState();
+            } else {
+                this.option = event;
+                this.$emit('input', this.option);
+            }
+        },
+        close() {
+            this.$emit('close');
+        }
+    },
+    mounted() {
+        if (this.checkbox) {
+            this.selected = this.value;
+            this.toggleAllState();
+        } else {
+            this.option = this.value;
+        }
+    },    
+});
+
+Vue.component('ui-toast', {
+    props: ['time', 'message', 'showCloseMark'],
+    template: `
+        <div :style="cssToast" class="w3-animate-bottom" @click="close()">
+            <ui-icon v-if="showCloseMark" class="w3-right" icon="ios-close-empty" size="2x" hover style="margin-top: -7px;"></ui-icon>
+            <div v-html="message"></div>
+            <slot></slot>
+        </div>
+    `,
+    data() {
+        return {
+            visible: true,
+        }
+    },
+    computed: {
+        cssToast() {
+            return {
+                cursor: 'default',
+                userSelect: 'none',
+                width: '280px',
+                backgroundColor: '#333',
+                color: '#fff',
+                textAlign: 'left',
+                padding: '8px',
+                margin: '10px',
+                //borderRadius: '5px',
+                position: 'fixed',
+                zIndex: '100000000',
+                bottom: 0,
+                left: 0,
+            };
+        },
+    },
+    methods: {
+        close() {
+            this.$emit('close');
+        },
+    },
+    mounted() {
+        window.setTimeout(function() {
+            this.close();
+        }.bind(this), this.time ? parseInt(this.time, 10) : 5000);
+    }
+});
+
+Vue.component('ui-input-date', {
+    props: ['width', 'label', 'readonly', 'value', 'validation'],
+    template: `
+        <div>
+            <input :style="{ width: width || '100%' }" v-ui-input:type="setReadOnly" type="date" :value="date" @input="handler($event.target.value)"></input>
+            <div :style="{ width: width || '100%' }" v-ui-input-label:type="setReadOnly">
+                <p v-show="isValidDate">
+                    {{ label }}
+                </p>                
+                <p v-show="!isValidDate" style="color: red">
+                    {{ validation }}
+                <p>
+            </div>
+        </div>
+    `,
+    data() {
+        return {
+            isValidDate: true
+        }
+    },
+    computed: {
+        setReadOnly() {
+            if (this.readonly !== null && this.readonly !== undefined && this.readonly !== false) {
+                return 'readonly';
+            }
+            return false;
+        },
+        date() {
+            if (this.isValidString(this.value)) {
+                this.isValidDate = true;
+                return this.value;
+            }
+            if (this.isDate(this.value)) {
+                this.isValidDate = true;
+                return this.dateToString(this.value);
+            }
+            this.isValidDate = false;
+            return null;
+        },
+    },
+    methods: {
+        isValidString(s) {
+            return ({}).toString.call(s).match(/\s([a-zA-Z]+)/)[1].toLowerCase() === 'string' && /\d{4}\-\d{2}\-\d{2}/.test(s);
+        },
+        isDate(d) {
+            return ({}).toString.call(d).match(/\s([a-zA-Z]+)/)[1].toLowerCase() === 'date';
+        },
+        dateToString(d) {
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toJSON().slice(0, 10);
+        },
+        handler(v) {
+            var result = this.isValidString(v) ? v : null;
+            this.$emit('input', result);
+            this.$emit('change', result);
+        },
+    },
+});
+
+Vue.component('ui-input-number', {
+    props: ['width', 'label', 'readonly', 'value'],
+    template: `
+        <div>
+            <input type="number" :style="{ width: width }" v-ui-input:type="setReadOnly" v-ui-auto-select :value="value" @input="handler($event.target.value)"></input>
+            <div v-ui-input-label:type="setReadOnly">
+                <p>
+                    {{ label }}
+                </p>
+            </div>
+        </div>
+    `,
+    computed: {
+        setReadOnly() {
+            if (this.readonly !== null && this.readonly !== undefined && this.readonly !== false) {
+                return this.value >= 0 ? 'readonly' : 'readonlyNegative';
+            }
+            return false;
+        }
+    },
+    methods: {
+        handler(v) {
+            this.$emit('input', v);
+            this.$emit('change', v);
+        },
+    },
+});
+
+Vue.component('ui-toolbar', {
+    props: ['menuItems', 'title', 'icon'],
+    template: `
+        <div class="w3-bar w3-top w3-card w3-light-gray" style="overflow: visible;">
+            <div class="w3-bar-item w3-left">
+                <ui-icon :icon="icon" fixed></ui-icon>
+                <span style="line-height:100%; vertical-align: middle;">{{ title }}</span>
+            </div>
+            <div class="w3-dropdown-click w3-right" v-ui-click-outside="closeMenu">
+                <div class="w3-button" @click="toggleMenu()">
+                    <ui-icon icon="bars"></i>
+                </div>
+                <div ref="menu" class="w3-dropdown-content w3-bar-block w3-card" style="right:0" :class="{ 'w3-show': isOpen }">
+                    <div v-for="(item, index) in menuItems" class="w3-bar-item w3-button w3-block w3-left-align" @click="select(index)">
+                        <ui-icon :icon="item.icon" fixed></ui-icon>
+                        <span style="line-height:100%; vertical-align:middle;">{{ item.title }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `,
+    data() {
+        return {
+            isOpen: false,
+        }
+    },
+    methods: {
+        select(index) {
+            this.$emit('selected', index);
+            this.closeMenu();
+        },
+        toggleMenu() {
+            this.isOpen = !this.isOpen;
+        },
+        closeMenu() {
+            this.isOpen = false;
+        },
+    },
+});
+
+Vue.component('ui-sidebar', {
+    props: ['open'],
+    template: `
+        <ui-animation-offcanvas>
+            <div v-if="open" class="w3-sidebar sidebar">
+                <div class="w3-bar w3-top w3-light-grey w3-card" style="left: 0; width: 100%">
+                    <div class="w3-bar-item w3-left w3-hover-light-grey" @click="close()" style="cursor: pointer; width: 100%">
+                        <span>
+                            <ui-icon icon="chevron-left"></ui-icon>
+                        </span>
+                        <span style="line-height:100%; vertical-align:middle;">&nbsp;&nbsp;Voltar</span>
+                    </div>
+                </div>
+                <div :style="cssContent">
+                    <slot></slot>
+                </div>
+            </div>
+        </<ui-animation-offcanvas>
+    `,
+    data() {
+        return {
+            cssContent: {
+                paddingTop: '40px'
+            },
+        }
+    },
+    methods: {
+        close() {
+            this.$emit('close');
+        },
+    },
+});
+
+Vue.component('ui-menu', {
+    props: ['titles', 'icons', 'components'],
+    template: `
+        <ul class="w3-ul w3-card w3-white">
+            <template v-for="(title, index) in titles" >
+                <li class="w3-hover-light-grey" @click="toggle(index)" style="background-color: #FAFAFA;cursor: pointer; user-select: none;">
+                    <p>
+                        <span>
+                            <ui-icon :icon="icons[index]" fixed></ui-icon>
+                        </span>
+                        <span style="padding-left: 5px;"> {{ title }} </span>
+                        <span class="w3-right">
+                            <ui-icon :icon="item === index ? 'chevron-up' : 'chevron-down'"></ui-icon>
+                        </span>
+                    </p>
+                </li>
+                <ui-animation-slide>
+                    <div v-show="index === item">
+                        <component :is="components[index]"></component>
+                    </div>
+                </ui-animation-slide>
+            </template>
+        </ul>
+    `,
+    data() {
+        return {
+            item: -1,
+        }
+    },
+    methods: {
+        toggle(index) {
+            if (this.item === index) {
+                this.item = -1;
+            } else {
+                this.item = index;
+            }
+        },
+    }
+});
+
+Vue.component('ui-tabs', {
+    props: ['titles', 'icons', 'components'],
+    template: `
+        <div style="width: 100%; margin-top: -13px;">
+            <div class="w3-white" style="cursor: pointer; user-select: none; width: 300px;">
+                <div v-for="(component, index) in components" @click.prevent="tab = index" class="w3-cell" style="width: 100px;">
+                    <div class="w3-bottombar w3-hover-light-grey w3-padding" 
+                        :class="{ 'w3-border-blue' : (tab === index), 'w3-light-gray' : (tab === index)}"
+                        style="text-align: center">
+                        <span v-if="icons">
+                            <ui-icon :icon="icons[index]" :fixed="titles"></ui-icon>
+                        </span>
+                        <span v-if="titles">
+                            {{ titles[index] }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <keep-alive>
+                    <component :is="components[tab]"></component>
+                </keep-alive>
+            </div>
+        </div>
+    `,
+    data() {
+        return {
+            tab: 0,
+        }
+    },
+});
+
+</script>

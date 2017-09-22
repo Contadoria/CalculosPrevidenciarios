@@ -1,0 +1,249 @@
+<script>
+
+/*
+* Componentes da tela de opções avançadas: 
+* 'item-atualizacoes', 'item-gerenciamento-padroes', 'item-preferencias', 'view-avancado'.
+**/
+
+Vue.component('item-atualizacoes', {
+    template: `
+        <div class="w3-padding w3-padding-16">
+            <ui-button icon="line-chart" :loading="atualizandoIndices" :disabled="atualizandoTabelas" class="action" @click.native="atualizarIndices()">Índices</ui-button>
+            <ui-button icon="table" :loading="atualizandoTabelas" :disabled="atualizandoIndices" @click.native="atualizarTabelas()">Tabelas</ui-button>
+        </div>
+        `,
+    data() {
+        return {
+            atualizandoIndices: false,
+            atualizandoTabelas: false,
+        }
+    },
+    methods: {
+        atualizarIndices() {
+            this.atualizandoIndices = true;
+            this.$google.script.run
+                .withSuccessHandler(function (resposta, context) {
+                    var dados = JSON.parse(resposta);
+                    context.$log(resposta);
+                    context.atualizandoIndices = false;
+                    context.$store.commit('notificarInfo', dados || '<p>Nenhum resultado foi informado pelo servidor.</p>');
+                })
+                .withFailureHandler(function (erro, context) {
+                    context.$log('ERRO ===> ' + erro);
+                    context.atualizandoIndices = false;
+                    context.$store.commit('notificarErro', erro.message);
+                })
+                .withUserObject(this)
+                .atualizarIndices();
+        },
+        atualizarTabelas() {
+            this.atualizandoTabelas = true;
+            this.$google.script.run
+                .withSuccessHandler(function (resposta, context) {
+                    var dados = JSON.parse(resposta);
+                    context.$log(resposta);
+                    context.atualizandoTabelas = false;
+                    context.$store.commit('notificarInfo', dados || '<p>Nenhum resultado foi informado pelo servidor.</p>');
+                })
+                .withFailureHandler(function (erro, context) {
+                    context.$log('ERRO ===> ' + erro);
+                    context.atualizandoTabelas = false;
+                    context.$store.commit('notificarErro', erro.message);
+                })
+                .withUserObject(this)
+                .atualizarTabelas();
+        },
+        fechar() {
+            this.atualizandoIndices = false;
+            this.atualizandoTabelas = false;
+        }
+    },
+});
+
+Vue.component('item-gerenciamento-padroes', {
+    template: `
+        <ul class="w3-ul">
+            <template v-if="padroes.length > 0">
+                <li v-for="(registro, index) in padroes" style="padding-top:0;padding-bottom:0;">
+                    <div class="w3-display-container w3-text-grey" style="padding-top:8px;padding-bottom:8px;">
+                        <div>
+                            <span><b> {{ registro.rotulo }} </b></span>
+                        </div>
+                        <div class="w3-tiny w3-text-gray">
+                            {{ registro.intervalo }} 
+                        </div>
+                        <div class="w3-display-right w3-display-hover w3-hover-opacity" @click="item === index ? item = -1 : item = index">
+                            <ui-icon :icon="item === index ? 'times' : 'pencil'"></ui-icon>
+                        </div>
+                    </div>
+                    <ui-animation-slide>
+                        <div v-show="item === index" style="padding-top:8px;padding-bottom:8px;">
+                            <div>
+                                <textarea v-model.trim="registro.novo" rows="2" style="width: 100%"></textarea>
+                            </div>
+                            <div style="padding-top:8px;padding-bottom:8px;">
+                                <ui-icon-button class="w3-green" 
+                                                icon="cloud-upload"
+                                                :loading="atualizando === index" 
+                                                :disabled="registro.novo === registro.valor || registro.novo.length === 0 || atualizando === index || removendo === index"
+                                                @click.native="atualizarRegistro(index)">
+                                </ui-icon-button>
+                                <ui-icon-button class="w3-red"
+                                                icon="trash"
+                                                :loading="removendo === index" 
+                                                :disabled="atualizando === index || removendo === index"
+                                                @click.native="removerRegistro(index)">
+                                </ui-icon-button>
+                            </div>
+                        </div>
+                    </ui-animation-slide>
+                </li>
+            </template>
+            <template v-else>
+                <li>
+                    <div class="w3-container w3-padding-16">
+                        <strong class="w3-text-grey">Nenhum dado encontrado</strong>
+                    </div>
+                </li>
+            </template>
+        </ul>
+    `,
+    data: function () {
+        return {
+            item: -1,
+            atualizando: -1,
+            removendo: -1,
+        };
+    },
+    computed: {
+        padroes() {
+            return this.$store.state.todosPadroesSalvos;
+        }
+    },
+    methods: {
+        atualizarRegistro(index) {
+            this.atualizando = index;
+            this.$google.script.run
+                .withSuccessHandler(function (resposta, context) {
+                    var dados = JSON.parse(resposta);
+                    context.$log(dados);
+                    context.$store.commit('atualizarInfoPadrao', dados);
+                    context.atualizando = -1;
+                    context.$store.commit('notificarSucesso', '<p>Registro atualizado com sucesso.</p>');
+                })
+                .withFailureHandler(function (erro, context) {
+                    context.$log('ERRO ===> ' + erro);
+                    context.atualizando = -1;
+                    context.$store.commit('notificarErro', erro.message);
+                })
+                .withUserObject(this)
+                .atualizarInfoPadrao(this.padroes[index].intervalo, this.padroes[index].novo);
+        },
+        removerRegistro(index) {
+            this.removendo = index;
+            this.$google.script.run
+                .withSuccessHandler(function (resposta, context) {
+                    var dados = JSON.parse(resposta);
+                    context.$log(dados);
+                    context.$store.commit('atualizarInfoPadrao', dados);
+                    context.removendo = -1;
+                    context.item = -1;
+                    context.$store.commit('notificarSucesso', '<p>Registro apagado com sucesso.</p>');
+                })
+                .withFailureHandler(function (erro, context) {
+                    context.$log('ERRO ===> ' + erro);
+                    context.removendo = -1;
+                    context.$store.commit('notificarErro', erro.message);
+                })
+                .withUserObject(this)
+                .removerInfoPadrao(this.padroes[index].intervalo);
+        },
+        fechar() {
+            this.atualizando = -1;
+            this.removendo = -1;
+        }
+    }
+});
+
+Vue.component('item-preferencias', {
+    template: `
+        <div class="w3-padding">
+            <div style="padding-top:8px;padding-bottom:8px;">
+                <input name="abrir-automaticamente" type="checkbox" v-model="opcao"></input>
+                <label for="abrir-automaticamente">
+                    Abrir este complemento automaticamente, junto com a planilha.
+                </label>
+            </div>
+            <div style="padding-top:8px;padding-bottom:8px;">
+                <ui-button icon="check" class="action" :loading="salvando" :disabled="opcao === original" @click.native="salvarPreferencias()">Salvar</ui-button>
+            </div>
+        </div>
+        `,
+    data: function () {
+        return {
+            salvando: false,
+            opcao: false,
+            original: false,
+        };
+    },
+    computed: {
+        opcaoAbrir() {
+            return this.$store.state.preferencias.opcaoAbrir;
+        }
+    },
+    methods: {
+        atualizarDadosLocais() {
+            this.opcao = this.opcaoAbrir;
+            this.original = this.opcaoAbrir;
+        },
+        salvarPreferencias() {
+            if (this.opcao !== this.original) {
+                this.salvando = true;
+                this.$google.script.run
+                    .withSuccessHandler(function (resposta, context) {
+                        var dados = JSON.parse(resposta);
+                        context.$log(dados);
+                        context.$store.commit('atualizarPreferencias', dados);
+                        context.atualizarDadosLocais();
+                        context.salvando = false;
+                        context.$store.commit('notificarSucesso', '<p>Preferências salvas com sucesso.</p>');
+                    })
+                    .withFailureHandler(function (erro, context) {
+                        context.$log('ERRO ===> ' + erro);
+                        context.salvando = false;
+                        context.removendo = -1;
+                        context.$store.commit('notificarErro', erro.message);
+                    })
+                    .withUserObject(this)
+                    .atualizarPreferenciasDoUsuario({ opcaoAbrir: this.opcao });
+            }
+        },
+        fechar() {
+            this.salvando = false;
+            this.erro = false;
+            this.sucesso = false;
+        }
+    },
+    mounted() {
+        this.atualizarDadosLocais();
+    },
+});
+
+Vue.component('view-avancado', {
+    template: `
+        <div style="margin-top: -13px;">
+            <ui-menu class="w3-margin" :titles="menu.titles" :icons="menu.icons" :components="menu.components"></ui-menu>
+        </div>
+        `,
+    data: function () {
+        return {
+            menu: {
+                titles: ['Atualizações', 'Padrões do usuário', 'Preferências'],
+                icons: ['refresh', 'cloud', 'sliders'],
+                components: ['item-atualizacoes', 'item-gerenciamento-padroes', 'item-preferencias']
+            },
+        };
+    },
+});
+
+</script>

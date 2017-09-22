@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang='pt-br' name="viewport" content="width=device-width, initial-scale=1">
+
+<head>
+    <meta charset="UTF-8">
+    <base target="_top">
+    <script src="https://use.fontawesome.com/6cd8335dee.js"></script>
+    <link href="https://www.w3schools.com/w3css/4/w3.css" rel="stylesheet"> 
+    <link href="https://ssl.gstatic.com/docs/script/css/add-ons1.css" rel="stylesheet">
+    <?!= incluir('_estilos'); ?>
+</head>
+
+<body>
+
+    <div id="app"></div>
+
+    <script src="https://unpkg.com/vue@2.4.2/dist/vue.min.js"></script>
+    <script src="https://unpkg.com/vuex@2.4.0/dist/vuex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/velocity/1.5.0/velocity.min.js"></script>
+    <?!= Utils.load(true); ?>
+    <?!= TextParser.load(true); ?>
+    <?!= incluir('_config'); ?>
+    <?!= incluir('_ui-directives'); ?>
+    <?!= incluir('_ui-animations'); ?>
+    <?!= incluir('_ui-components'); ?>
+    <?!= incluir('_view-principal'); ?>
+    <?!= incluir('_view-calculadoras'); ?>
+    <?!= incluir('_view-avancado'); ?>
+    <?!= incluir('_app'); ?>
+    
+</body>
+
+</html>
+

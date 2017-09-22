@@ -1,0 +1,182 @@
+<script>
+
+/*
+* Página de configurações, carrega antes de todas as demais
+**/
+
+/*
+* Sempre alterar para false quando for publicar
+**/
+const MODO_DESENVOLVIMENTO = false;
+
+/*
+* Disponibiliza o objeto global da
+* API do Google para uso interno
+* nos componentes como 'this.$google'
+**/
+Vue.prototype.$google = google;
+
+/*
+* Disponibiliza as bibliotecas auxiliares
+* nos componentes como 'this.$parser' e 'this.$utils' 
+**/
+Vue.prototype.$parser = TextParser;
+Vue.prototype.$utils = Utils;
+Vue.prototype.$log = function(payload) {
+    if (MODO_DESENVOLVIMENTO) {
+        console.log('*** DEBUG_LOG');
+        console.log(payload);
+    }
+};
+
+/*
+* Define a rotina de tratamento de erros
+* para todos os componentes
+**/
+Vue.prototype.$errorHandler = function (e) {
+    google.script.run.registrarErro(e);
+};
+
+/*
+* Estabele parâmetros gerais da UI
+* para todos os componentes
+**/
+
+const TITULO_ERRO_PADRAO = 'Erro';
+const MENSAGEM_ERRO_PADRAO = '<p>Houve um erro na comunicação com o servidor. Tente reiniciar o complemento e repetir a operação.</p>';
+const TITULO_SUCESSO_PADRAO = 'Concluído';
+const MENSAGEM_SUCESSO_PADRAO = '<p>A operação foi concluída com sucesso.</p>';
+
+const LINKS = {
+    PRIVACIDADE: 'https://contadoria.github.io/privacidade/',
+    TERMOS_DE_USO: 'https://contadoria.github.io/uso/',
+    BUGS: 'https://github.com/contadoria/contadoria.github.io/issues',
+    TUTORIAIS: 'https://contadoria.github.io/Tutoriais'
+};
+
+const UI = {
+    MENU_PRINCIPAL: [
+        {
+            title: 'Principal',
+            icon: 'home',
+            component: 'view-principal'
+        },
+        {
+            title: 'Calculadoras',
+            icon: 'calculator',
+            component: 'view-calculadoras'
+        },
+        {
+            title: 'Avançado',
+            icon: 'wrench',
+            component: 'view-avancado'
+        },
+        {
+            title: 'Atualizar dados',
+            icon: 'refresh',
+            command: 'obterDados'
+        },
+        {
+            title: 'Ajuda',
+            icon: 'question-circle',
+            command: 'abrirAjuda'
+        },
+    ],
+    MENU_AJUDA: [
+        {
+            title: 'Política de privacidade',
+            icon: 'lock',
+            url: LINKS.PRIVACIDADE
+        },
+        {
+            title: 'Termos de uso',
+            icon: 'user',
+            url: LINKS.TERMOS_DE_USO
+        },
+        {
+            title: 'Reportar um problema',
+            icon: 'bug',
+            url: LINKS.BUGS
+        },
+        {
+            title: 'Tutoriais',
+            icon: 'graduation-cap',
+            url: LINKS.TUTORIAIS
+        },
+    ],
+};
+
+/*
+* Inicia a Vuex store
+**/
+
+Vue.use(Vuex);
+
+const store = new Vuex.Store({
+    state: {
+        listaIntervalos: [],
+        padroesParaSalvar: [],
+        padroesParaBaixar: [],
+        todosPadroesSalvos: [],
+        preferencias: {},
+        urlEstatistica: '',
+        marcoInterruptivo: new Date().toJSON().slice(0,10),
+        termoInicial: new Date().toJSON().slice(0,10),
+        erro: false,
+        info: false,
+        alerta: false,
+        sucesso: false,
+        msgErro: MENSAGEM_ERRO_PADRAO,
+        msgInfo: '',
+        msgAlerta: '',
+        msgSucesso: MENSAGEM_SUCESSO_PADRAO
+    },
+    mutations: {
+        atualizarListaIntervalos(state, intervalos) {
+            state.listaIntervalos = intervalos;
+        },
+        atualizarInfoPadrao(state, dados) {
+            state.padroesParaSalvar = dados.planilha;
+            state.padroesParaBaixar = dados.registro.filter(obj => obj.naPlanilha === true);
+            state.todosPadroesSalvos = dados.registro;            
+        },
+        atualizarUrlEstatistica(state, url) {
+            state.urlEstatistica = url;
+        },
+        atualizarPreferencias(state, preferencias) {
+            state.preferencias = preferencias || Object.create(null); 
+        },
+        atualizarDadosPrescricao(state, prescricao) {
+            state.marcoInterruptivo = prescricao.marcoInterruptivo;
+            state.termoInicial = prescricao.termoInicial;
+        },
+        notificarErro(state, msg) {
+            state.msgErro = msg;
+            state.erro = true;
+        },
+        notificarInfo(state, msg) {
+            state.msgInfo = msg;
+            state.info = true;
+        },
+        notificarAlerta(state, msg) {
+            state.msgAlerta = msg;
+            state.alerta = true;
+        },
+        notificarSucesso(state, msg) {
+            state.msgSucesso = msg;
+            state.sucesso = true;
+        },
+        fecharNotificacoes(state) {
+            state.erro = false;
+            state.info = false;
+            state.alerta = false;
+            state.sucesso = false;
+            state.msgErro = MENSAGEM_ERRO_PADRAO;
+            state.msgInfo = '';
+            state.msgAlerta = '';
+            state.msgSucesso = MENSAGEM_SUCESSO_PADRAO;
+        }
+    }
+});
+
+</script>

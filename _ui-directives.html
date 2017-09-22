@@ -1,0 +1,92 @@
+<script>
+
+/*
+* Diretivas para auxiliar na criação da interface com o usuário: 
+* 'ui-click-outside', 'ui-auto-select', 'ui-input', 'ui-input-label', 'ui-flash'
+**/
+
+/* 
+* Adaptado de https://stackoverflow.com/questions/36170425/detect-click-outside-element
+**/
+Vue.directive('ui-click-outside', {
+    bind: function (el, binding, vnode) {
+        el.event = function (event) {
+            // here I check that click was outside the el and his childrens
+            if (!(el == event.target || el.contains(event.target))) {
+                // and if it did, call method provided in attribute value
+                vnode.context[binding.expression](event);
+            }
+        };
+        document.documentElement.addEventListener('click', el.event);
+    },
+    unbind: function (el) {
+        document.documentElement.removeEventListener('click', el.event);
+    },
+});
+
+Vue.directive('ui-auto-select', {
+    bind: function (el, binding, vnode) {
+        el.isInput = (el.tagName === 'INPUT');
+        el.event = function(event) {
+            el.select();
+        };
+        el.isInput && el.addEventListener('focus', el.event);
+    },
+    unbind: function (el) {
+        el.isInput && el.removeEventListener('focus', el.event);
+    },
+});
+
+Vue.directive('ui-input', function(el, binding) {
+    var readOnly = (binding.value === 'readonly');
+    var readOnlyNegative = (binding.value === 'readonlyNegative');
+    el.style.border = '0';
+    el.style.boxShadow = 'none';
+    el.style.outline = '0';
+    el.readOnly = readOnly || readOnlyNegative;
+    el.style.borderBottom = readOnly ? '2px solid blue' : (readOnlyNegative ? '2px solid red' : '1px solid black');
+    if (readOnly) {
+        el.style.color = 'blue';
+        el.style.fontWeight = 'bold';
+        el.style.backgroundColor = '#E3F2FD';
+    }
+    if (readOnlyNegative) {
+        el.style.color = 'red';
+        el.style.fontWeight = 'bold';
+        el.style.backgroundColor = '#FFEBEE';
+    }
+});
+
+Vue.directive('ui-input-label', function(el, binding) {
+    var readOnly = (binding.value === 'readonly');
+    el.style.fontSize = '0.8em';
+    el.style.marginTop = '-10px';
+    el.style.marginBottom = '0';
+    el.style.marginLeft = '5px';
+    el.style.padding = '0';
+    el.style.color = readOnly ? 'blue' : 'gray';
+});
+
+Vue.directive('ui-flash', function(el, binding) {
+    if (binding.value.active === true) {
+        if (binding.arg === 'box') {
+            el.style.boxShadow = '0 0 15px ' + binding.value.flashColor;
+            Velocity(el, {boxShadowBlur: '50px'}, {duration: 200});
+            Velocity(el, 'reverse');
+        } else {
+            el.style.color = binding.value.flashColor;
+            el.style.backgroundColor = binding.value.flashBackgroundColor || el.style.backgroundColor;
+            el.style.textShadow = '0 0 0 ' + binding.value.flashColor;
+            Velocity(el, {textShadowBlur: '50px'}, {duration: 200});
+            Velocity(el, 'reverse');
+        }
+    } else {
+        el.style.boxShadow = 'none';
+        if (binding.arg === 'text') {
+            el.style.color = binding.value.originalColor;
+            el.style.backgroundColor = binding.value.originalBackgroundColor || el.style.backgroundColor;
+        }
+    }
+});
+
+</script>

@@ -1,0 +1,136 @@
+<script>
+
+/*
+* Página principal da UI, com a barra de navegação e a barra lateral de ajuda.
+* Aqui estão todos os pontos de entrada.
+* A configuração é feita pelo objeto 'ui'
+**/
+var vm = new Vue({
+    el: '#app',
+    store,
+    template: `
+        <div :style="cssPagina">
+            <div v-if="inicializado && !carregando">
+                <ui-sidebar @close="fecharAjuda()" :open="menuAjudaAberto">
+                    <div v-for="item in menuAjuda" class="w3-button w3-block w3-left-align w3-text-grey" @click="abrirUrl(item.url)">
+                        <ui-icon :icon="item.icon" fixed></ui-icon>
+                        <span style="line-height:100%; vertical-align:middle;">{{ item.title }}</span>
+                    </div>
+                </ui-sidebar>
+                <div>
+                    <ui-toolbar 
+                        :menuItems="menuPrincipal" 
+                        :title="view.title" 
+                        :icon="view.icon" 
+                        @selected="selecionar($event)"
+                        class="w3-text-grey">
+                    </ui-toolbar>
+                    <keep-alive>
+                        <component :is="view.component"></component>
+                    </keep-alive>
+                </div>
+            </div>
+            <ui-spinner v-if="carregando" size="normal" overlay></ui-spinner>
+            <ui-dialog v-if="erroInicializacao" type="error" :title="TITULO_ERRO_PADRAO" :message="MENSAGEM_ERRO_PADRAO" :show-close-mark="false"></ui-dialog>
+            <ui-dialog v-if="notificarErro" type="error" animated :title="TITULO_ERRO_PADRAO" :message="msgErro" :show-close-mark="true" @close="fecharNotificacao()"></ui-dialog>
+            <ui-dialog v-if="notificarAlerta" type="alert" animated title="Aviso" :message="msgAlerta" @close="fecharNotificacao()"></ui-dialog>
+            <ui-dialog v-if="notificarInfo" type="info" animated title="Info" :message="msgInfo" :show-close-mark="true" @close="fecharNotificacao()"></ui-dialog>
+            <ui-toast v-if="notificarSucesso" animated :message="msgSucesso" :show-close-mark="false" @close="fecharNotificacao()"></ui-toast>
+        </div>
+    `,
+    data: {
+        cssPagina: {
+            width: "300px",
+            paddingTop: '48px'
+        },
+        carregando: true,
+        inicializado: false,
+        erroInicializacao: false,
+        menuPrincipal: UI.MENU_PRINCIPAL,
+        menuAjuda: UI.MENU_AJUDA,
+        view: UI.MENU_PRINCIPAL[0],
+        menuAjudaAberto: false,
+    },
+    computed: {
+        notificarErro(){
+            return this.$store.state.erro;
+        },
+        notificarSucesso(){
+            return this.$store.state.sucesso;
+        },
+        notificarAlerta(){
+            return this.$store.state.alerta;
+        },
+        notificarInfo(){
+            return this.$store.state.info;
+        },
+        msgErro(){
+            return this.$store.state.msgErro;
+        },
+        msgSucesso(){
+            return this.$store.state.msgSucesso;
+        },
+        msgAlerta(){
+            return this.$store.state.msgAlerta;
+        },
+        msgInfo(){
+            return this.$store.state.msgInfo;
+        },
+    },
+    methods: {
+        obterDados() {
+            this.carregando = true;
+            this.$google.script.run
+            .withSuccessHandler(function(resposta, context) {
+                try {
+                    var dados = JSON.parse(resposta);
+                    context.$log(dados);
+                    context.$store.commit('atualizarListaIntervalos', dados.intervalos);
+                    context.$store.commit('atualizarInfoPadrao', dados.infoPadrao);
+                    context.$store.commit('atualizarUrlEstatistica', dados.urlEstatistica);
+                    context.$store.commit('atualizarPreferencias', dados.preferencias);
+                    context.$store.commit('atualizarDadosPrescricao', dados.prescricao);
+                    context.carregando = false;
+                    context.inicializado= true;
+                } catch (erro) {
+                    context.$errorHandler(erro);
+                    context.carregando = false;
+                    context.erroInicializacao = true;
+                    context.$log(erro);
+                }
+            })
+            .withFailureHandler(function(erro, context) {
+                context.$log(erro);
+                context.carregando = false;
+                context.erroInicializacao = true;
+            })
+            .withUserObject(this)
+            .obterDados();
+        },
+        fecharAjuda() {
+            this.menuAjudaAberto = false;
+        },
+        abrirAjuda() {
+            this.menuAjudaAberto = true;
+        },
+        fecharNotificacao() {
+            this.$store.commit('fecharNotificacoes');
+        },
+        selecionar(e) {
+            if (this.menuPrincipal[e].component) {
+                this.view = this.menuPrincipal[e];
+            }
+            if (this.menuPrincipal[e].command) {
+                this[this.menuPrincipal[e].command]();
+            }
+        },
+        abrirUrl(url) {
+            window.open(url, '_blank').focus();
+        }
+    },
+    mounted() {
+        this.obterDados();
+    }
+});
+
+</script>

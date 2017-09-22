@@ -1,0 +1,162 @@
+<style>
+
+html,
+body {
+    width: 300px;
+    height: 100%;
+    background-color: white;
+    box-sizing: border-box;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+::-webkit-scrollbar {
+    width: 5px;
+}
+
+::-webkit-scrollbar-button {
+    background: #eee;
+    display: none;
+}
+
+::-webkit-scrollbar-track-piece {
+    background: #eee;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+}
+
+.w3-disabled {
+    cursor: default;
+    pointer-events: none;
+}
+
+.w3-modal {
+    padding-top: 0;
+}
+
+.w3-modal.lighter {
+    background-color: rgba(0,0,0,0.0);
+}
+
+@media (max-width: 600px) {
+    .w3-modal-content {
+        width: 90% !important;
+    }
+}
+
+input[type="checkbox"]:indeterminate:after {
+    background: grey;
+    content: '';
+    position: relative;
+    display: block;
+    left: 2px;
+    top: 2px;
+    height: 7px;
+    width: 7px;
+}
+
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    display: none;
+}
+
+input[type=date]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    display: none;
+}
+
+input[type=date]::-webkit-clear-button {
+    -webkit-appearance: none;
+    display: none;
+}
+
+.spinner {
+    animation: rotator 1.4s linear infinite;
+}
+
+@keyframes rotator {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(270deg);
+    }
+}
+
+.path {
+    stroke-dasharray: 187;
+    stroke-dashoffset: 0;
+    transform-origin: center;
+    animation: dash 1.4s ease-in-out infinite, colors 5.6s ease-in-out infinite;
+}
+
+.path-mono {
+    stroke-dasharray: 187;
+    stroke-dashoffset: 0;
+    transform-origin: center;
+    animation: dash 1.4s ease-in-out infinite, mono 5.6s ease-in-out infinite;
+}
+
+@keyframes colors {
+    0% {
+        stroke: #4285F4;
+    }
+    25% {
+        stroke: #DE3E35;
+    }
+    50% {
+        stroke: #F7C223;
+    }
+    75% {
+        stroke: #1B9A59;
+    }
+    100% {
+        stroke: #4285F4;
+    }
+}
+
+@keyframes mono {
+    0% {
+        stroke: black;
+    }
+    25% {
+        stroke: black;
+    }
+    50% {
+        stroke: black;
+    }
+    75% {
+        stroke: black;
+    }
+    100% {
+        stroke: black;
+    }
+}
+
+@keyframes dash {
+    0% {
+        stroke-dashoffset: 187;
+    }
+    50% {
+        stroke-dashoffset: 47;
+        transform: rotate(135deg);
+    }
+    100% {
+        stroke-dashoffset: 187;
+        transform: rotate(450deg);
+    }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity .2s
+}
+
+.fade-enter,
+.fade-leave-to {
+    opacity: 0
+}
+
+</style>
