@@ -14,7 +14,7 @@ Este repositório hospeda a documentação do complemento "*Cálculos Previdenci
 ### Como instalar
 
 1. Peça para ser incluído no grupo de usuários.
-2. Vá até a **[página do complemento](https://chrome.google.com/webstore/detail/c%C3%A1lculos-previdenci%C3%A1rios/cjeahogdijapbbnndojpidgdneeepnla?hl=pt-BR)**.
+2. Vá até a **[página do complemento](https://chrome.google.com/webstore/detail/contadoria-c%C3%A1lculos/jakfnmamaegnnpojhbcapbhjjjdkhdml)**.
 3. Clique no botão "+".
 4. Siga as instruções de instalação.
 5. O complemento estará disponível em todas as suas planilhas.
